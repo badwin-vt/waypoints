@@ -1,0 +1,15 @@
+mod =  [
+	"Waypoints"
+]
+
+package = [
+	"resource_packages/Waypoints/Waypoints"
+]
+
+lua = [
+	"scripts/mods/Waypoints/*"
+]
+
+material = [
+  "materials/Waypoints/*"
+]

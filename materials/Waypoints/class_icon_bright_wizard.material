@@ -1,0 +1,14 @@
+class_icon_bright_wizard = {
+  material_contexts = {
+    surface_material = ""
+  }
+  
+  shader = "gui:DIFFUSE_MAP"
+  
+  textures = {
+    diffuse_map = "textures/Waypoints/class_icon_bright_wizard"
+  }
+  
+  variables = {
+  }
+}

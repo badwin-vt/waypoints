@@ -183,6 +183,7 @@ mod.waypoint_set = function(self)
 	local world = Managers.state.spawn.world
 	local physics_world = World.get_data(world, "physics_world")
 	local result = PhysicsWorld.immediate_raycast(physics_world, camera_position, camera_direction, 100, "all", "collision_filter", filter)
+	local did_hit = false
 
 	if result then
 		local num_hits = #result
@@ -195,7 +196,8 @@ mod.waypoint_set = function(self)
 
 			if not attack_hit_self then
 
-				-- mod:echo('waypoint set')
+				did_hit = true
+				--mod:echo('hit self')
 				-- mod:echo(hit[1])
 
 				mod:network_send("rpc_waypoint_set", "all", character_name, hit[1][1], hit[1][2], hit[1][3])
@@ -203,8 +205,11 @@ mod.waypoint_set = function(self)
 				return hit[1]
 			end
 		end
-	else
-			mod:network_send("rpc_waypoint_remove", "all", character_name)
+	end
+
+	if not did_hit then
+		--mod:echo('hit nothing')
+		mod:network_send("rpc_waypoint_remove", "all", character_name)
 	end
 end
 
@@ -325,17 +330,7 @@ mod.waypoint_render = function(self, dt)
 										local icon_loc_x = 0
 										local icon_loc_y = 0
 
-										local alpha = 255 - (255 * distance / 5)
-
-										-- Show the waypoint icon on either the left or right side of the screen based on position
-										-- relative to player's rotation
-										if offset_x > 0 then
-											--icon_loc_x = screen_width - (waypoint_size_behind * 2)
-											icon_loc_x = center_pos_x + offset_x
-										else
-											--icon_loc_x = waypoint_size_behind
-											icon_loc_x = center_pos_x + offset_x - waypoint_size_behind
-										end
+										local alpha = math.max(0, 255 - (255 * distance / 5))
 
 										icon_loc_x = x
 										icon_loc_y = y
@@ -345,7 +340,7 @@ mod.waypoint_render = function(self, dt)
 										offset_y = num_waypoints_active * (waypoint_size_behind + 10)
 
 										--Gui.bitmap(mod.waypoint_gui, icon_name, Vector2(icon_loc_x, icon_loc_y), Vector2(waypoint_size_behind, waypoint_size_behind), Color(255, 255, 255, 255))
-										Gui.bitmap(mod.waypoint_gui, icon_name, Vector2(icon_loc_x, center_pos_y - offset_y), Vector2(waypoint_size_behind, waypoint_size_behind), Color(alpha, 255, 255, 255))
+										Gui.bitmap(mod.waypoint_gui, icon_name, Vector2(icon_loc_x, icon_loc_y), Vector2(waypoint_size_behind, waypoint_size_behind), Color(alpha, 255, 255, 255))
 									end
 								else
 									Gui.bitmap(mod.waypoint_gui, icon_name, Vector2(waypoint_position2d[1], waypoint_position2d[2]), Vector2(waypoint_size, waypoint_size))
@@ -446,6 +441,12 @@ mod.get_arrow_angle_and_offset = function (forward_dot, right_dot, arrow_size, i
 end
 
 mod.waypoint_gui = nil
+
+-- Clear your own waypoint
+mod.clear_own_waypoint = function()
+	local player_character = mod.get_current_character()
+	mod.clear_waypoint(mod.waypoints[player_character])
+end
 
 -- Clear the waypoint (e.g. on level change or when a user reaches it)
 mod.clear_waypoint = function (character_waypoint_to_clear)

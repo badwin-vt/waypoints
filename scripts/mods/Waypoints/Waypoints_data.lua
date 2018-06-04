@@ -29,6 +29,14 @@ return {
       ["default_value"] = {"=", "ctrl"},
       ["action"] = "waypoint_set"
     },
+    {
+      ["setting_name"] = "waypoint_clear_hotkey",
+      ["widget_type"] = "keybind",
+      ["text"] = mod:localize("waypoint_clear_hotkey"),
+      ["tooltip"] = mod:localize("waypoint_clear_hotkey_tooltip"),
+      ["default_value"] = {"-", "ctrl"},
+      ["action"] = "clear_own_waypoint"
+    },
     --[[{
       ["setting_name"] = "waypoint_set_self_hotkey",
       ["widget_type"] = "keybind",

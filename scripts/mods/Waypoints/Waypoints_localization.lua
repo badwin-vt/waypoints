@@ -29,6 +29,13 @@ return {
 		en = "Sets a waypoint where you're looking."
 	},
 
+	waypoint_clear_hotkey = {
+		en = "Clear Waypoint"
+	},
+	waypoint_clear_hotkey_tooltip = {
+		en = "Clears your previous waypoint."
+	},
+
 	--[[waypoint_set_self_hotkey = {
 		en = "Tag Yoself"
 	},

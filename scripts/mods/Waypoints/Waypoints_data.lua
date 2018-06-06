@@ -26,7 +26,7 @@ return {
       ["widget_type"] = "keybind",
       ["text"] = mod:localize("waypoint_set_hotkey"),
       ["tooltip"] = mod:localize("waypoint_set_hotkey_tooltip"),
-      ["default_value"] = {"=", "ctrl"},
+      ["default_value"] = {},
       ["action"] = "waypoint_set"
     },
     {
@@ -34,7 +34,7 @@ return {
       ["widget_type"] = "keybind",
       ["text"] = mod:localize("waypoint_clear_hotkey"),
       ["tooltip"] = mod:localize("waypoint_clear_hotkey_tooltip"),
-      ["default_value"] = {"-", "ctrl"},
+      ["default_value"] = {},
       ["action"] = "clear_own_waypoint"
     },
     --[[{

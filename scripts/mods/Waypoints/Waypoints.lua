@@ -1,18 +1,9 @@
 local mod = get_mod("Waypoints")
 
 mod.waypoints_ready = false
+mod.waypoint_gui = nil
 mod.waypoint_lifespan_in_seconds = mod:get("waypoint_lifetime")
 mod.clear_waypoint_when_reached = mod:get("clear_waypoint_when_reached")
-
--- Update settings when changed
-mod.on_setting_changed = function(setting_name)
-	if setting_name == "waypoint_lifetime" then
-		mod.waypoint_lifespan_in_seconds = mod:get("waypoint_lifetime")
-	end
-	if setting_name == "clear_waypoint_when_reached" then
-		mod.clear_waypoint_when_reached = mod:get("clear_waypoint_when_reached")
-	end
-end
 
 mod.tooltip_settings = {
 	distance_from_center = {
@@ -64,56 +55,25 @@ mod.waypoints = {
 	}
 }
 
-local SIZE_X = 1920
-local SIZE_Y = 1080
-
-mod.scenegraph_definition = {
-	screen = {
-		scale = "fit",
-		position = {
-			0,
-			0,
-			UILayer.hud
-		},
-		size = {
-			SIZE_X,
-			SIZE_Y
-		}
-	}
-}
-
-mod.center_position = {
-	mod.scenegraph_definition.screen.size[1] * 0.5,
-	mod.scenegraph_definition.screen.size[2] * 0.5
-}
-
 mod.SETTING_NAMES = {
 	WAYPOINT_SET_HOTKEY = "waypoint_set_hotkey",
-	-- WAYPOINT_SET_SELF_HOTKEY = "waypoint_set_self_hotkey",
 }
 
-local function dump(o)
-   if type(o) == 'table' then
-      local s = '{ '
-      for k,v in pairs(o) do
-         if type(k) ~= 'number' then k = '"'..k..'"' end
-         s = s .. '['..k..'] = ' .. dump(v) .. ','
-      end
-      return s .. '} '
-   else
-      return tostring(o)
-   end
+
+-- Update settings when changed
+mod.on_setting_changed = function(setting_name)
+	if setting_name == "waypoint_lifetime" then
+		mod.waypoint_lifespan_in_seconds = mod:get("waypoint_lifetime")
+	end
+	if setting_name == "clear_waypoint_when_reached" then
+		mod.clear_waypoint_when_reached = mod:get("clear_waypoint_when_reached")
+	end
 end
 
 -- Send waypoint set network event to all clients
 mod:network_register("rpc_waypoint_set", function(sender_peer_id, waypoint_caster, waypoint_x, waypoint_y, waypoint_z)
 	mod:waypoint_received(waypoint_caster, waypoint_x, waypoint_y, waypoint_z)
 end)
-
--- Send waypoint SELF network event to all clients
---[[mod:network_register("rpc_waypoint_set_self", function(sender_peer_id, waypoint_caster, unit_to_follow)
-	mod:waypoint_received_self(waypoint_caster, unit_to_follow)
-end)--]]
 
 -- Function to perform when a client receives the waypoint location
 mod.waypoint_received = function(self, waypoint_caster, waypoint_x, waypoint_y, waypoint_z)
@@ -124,17 +84,6 @@ mod.waypoint_received = function(self, waypoint_caster, waypoint_x, waypoint_y, 
 
 	-- mod:echo("waypoint received...")
 end
-
--- Function to perform when a client receives the waypoint SELF location
---[[mod.waypoint_received_self = function(self, waypoint_caster, unit_to_follow)
-	mod.waypoints[waypoint_caster].waypoint_is_set = true
-	mod.waypoints[waypoint_caster].waypoint_should_follow = true
-	mod.waypoints[waypoint_caster].unit_to_follow = unit_to_follow
-	mod.waypoints[waypoint_caster].waypoint_current_time = 0
-	mod.waypoints[waypoint_caster].waypoint_vector = Vector3(0,0,0)
-
-	-- mod:echo("waypoint SELF received...")
-end--]]
 
 -- Send waypoint removal network event to all clients
 mod:network_register("rpc_waypoint_remove", function(sender_peer_id, waypoint_caster)
@@ -156,11 +105,6 @@ mod.get_current_character = function(self)
 	local profile_index = player:profile_index()
 	local profile_settings = SPProfiles[profile_index]
 	local display_name = profile_settings.display_name
-
-	-- Echo the display name of the character
-	-- mod:echo(display_name)
-	-- Echo the steam player's name
-	--mod:echo(player._cached_name)
 
 	return display_name
 end
@@ -197,8 +141,6 @@ mod.waypoint_set = function(self)
 			if not attack_hit_self then
 
 				did_hit = true
-				--mod:echo('hit self')
-				-- mod:echo(hit[1])
 
 				mod:network_send("rpc_waypoint_set", "all", character_name, hit[1][1], hit[1][2], hit[1][3])
 
@@ -208,26 +150,9 @@ mod.waypoint_set = function(self)
 	end
 
 	if not did_hit then
-		--mod:echo('hit nothing')
 		mod:network_send("rpc_waypoint_remove", "all", character_name)
 	end
 end
-
--- Sets a waypoint on the player's character
---[[mod.waypoint_set_self = function(self)
-	if not mod:is_enabled() or not Managers.state.spawn.world then
-		return
-	end
-
-	local character_name = mod.get_current_character()
-	local player_manager = Managers.player
-	local player = player_manager:local_player(1)
-	local unit_to_follow = player.player_unit
-
-	mod:network_send("rpc_waypoint_set_self", "all", character_name, unit_to_follow)
-
-end
---]]
 
 -- Hook to perform updates to UI
 mod:hook("MatchmakingManager.update", function(func, self, dt, ...)
@@ -252,8 +177,6 @@ mod.waypoint_render = function(self, dt)
 
 						-- Increment waypoints var so we can position them properly
 						num_waypoints_active = num_waypoints_active + 1
-
-						-- mod:echo(waypoint_vector)
 
 						local player = Managers.player:local_player()
 
@@ -324,8 +247,6 @@ mod.waypoint_render = function(self, dt)
 								if not waypoint_on_me then
 										local arrow_size = Vector2(waypoint_size_behind,waypoint_size_behind)
 										local icon_size = Vector2(waypoint_size_behind,waypoint_size_behind)
-										local height_from_center = waypoint_position2d[2] - mod.center_position[2]
-										local arrow_angle, offset_x, offset_y, offset_z = mod.get_arrow_angle_and_offset(player_forward_dot, player_right_dot, arrow_size, icon_size, height_from_center)
 
 										local icon_loc_x = 0
 										local icon_loc_y = 0
@@ -335,22 +256,11 @@ mod.waypoint_render = function(self, dt)
 										icon_loc_x = x
 										icon_loc_y = y
 
-										-- Adjust the waypoint icon's y position based on how many waypoints are active
-										center_pos_y = center_pos_y - (num_waypoints_active * waypoint_size_behind * 0.5)
-										offset_y = num_waypoints_active * (waypoint_size_behind + 10)
-
-										--Gui.bitmap(mod.waypoint_gui, icon_name, Vector2(icon_loc_x, icon_loc_y), Vector2(waypoint_size_behind, waypoint_size_behind), Color(255, 255, 255, 255))
 										Gui.bitmap(mod.waypoint_gui, icon_name, Vector2(icon_loc_x, icon_loc_y), Vector2(waypoint_size_behind, waypoint_size_behind), Color(alpha, 255, 255, 255))
 									end
 								else
 									Gui.bitmap(mod.waypoint_gui, icon_name, Vector2(waypoint_position2d[1], waypoint_position2d[2]), Vector2(waypoint_size, waypoint_size))
 							end
-
-							--[[if not is_behind then
-								Gui.bitmap(mod.waypoint_gui, icon_name, Vector2(waypoint_position2d[1], waypoint_position2d[2]), Vector2(waypoint_size, waypoint_size))
-							else
-								Gui.bitmap(mod.waypoint_gui, icon_name, Vector2(center_pos_x - waypoint_size_behind, center_pos_y - waypoint_size_behind), Vector2(waypoint_size_behind, waypoint_size_behind))
-							end--]]
 						end
 					else
 						-- mod:echo('waypoint expired!')
@@ -414,34 +324,6 @@ mod.get_floating_icon_position = function (screen_pos_x, screen_pos_y, forward_d
 	return clamped_x_pos, clamped_y_pos, is_clamped, is_behind
 end
 
-mod.get_arrow_angle_and_offset = function (forward_dot, right_dot, arrow_size, icon_size, height_from_center)
-	local static_angle_value = 1.57079633
-	local offset_x = 0
-	local offset_y = 0
-	local offset_z = 0
-	local angle = math.atan2(right_dot, forward_dot)
-
-	if height_from_center < -400 and forward_dot > 0.6 then
-		offset_y = -(icon_size[2] * 0.5 + arrow_size[2])
-		static_angle_value = static_angle_value * 2
-	elseif height_from_center > 400 and forward_dot > 0.6 then
-		offset_y = icon_size[2] * 0.5 + arrow_size[2]
-		static_angle_value = 0
-	elseif angle > 0 then
-		offset_x = icon_size[2] * 0.5 + arrow_size[2]
-	elseif angle < 0 then
-		offset_x = -(icon_size[2] * 0.5 + arrow_size[2])
-		static_angle_value = -static_angle_value
-	else
-		offset_x, offset_y, offset_z = nil
-		static_angle_value = 0
-	end
-
-	return static_angle_value, offset_x, offset_y, offset_z
-end
-
-mod.waypoint_gui = nil
-
 -- Clear your own waypoint
 mod.clear_own_waypoint = function()
 	local player_character = mod.get_current_character()
@@ -462,8 +344,6 @@ mod.clear_all_waypoints = function()
 end
 
 mod.create_gui = function(self)
-	mod.ui_scenegraph = UISceneGraph.init_scenegraph(mod.scenegraph_definition)
-
 	if Managers.world:world("top_ingame_view") then
 		local top_world = Managers.world:world("top_ingame_view")
 

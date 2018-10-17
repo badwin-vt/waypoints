@@ -155,7 +155,7 @@ mod.waypoint_set = function(self)
 end
 
 -- Hook to perform updates to UI
-mod:hook("MatchmakingManager.update", function(func, self, dt, ...)
+mod:hook(MatchmakingManager, "update", function(func, self, dt, ...)
 	mod:waypoint_render(dt)
 
 	func(self, dt, ...)
@@ -164,7 +164,9 @@ end)
 -- Render waypoints on update
 mod.waypoint_render = function(self, dt)
 	mod:pcall(function()
-		if mod.waypoints_ready and Managers.world:world("level_world") then
+		-- if mod.waypoints_ready and Managers.world:world("level_world") then
+		if mod.waypoints_ready and not Managers.player.network_manager.matchmaking_manager._ingame_ui.current_view and Managers.world:world("level_world") then
+
 			local num_waypoints_active = 0
 
 			for _, charwp in pairs(mod.waypoints) do
@@ -384,70 +386,63 @@ mod.on_disabled = function(initial_call)
 	mod.waypoints_ready = false
 
 	mod.clear_all_waypoints()
-
-	mod:disable_all_hooks()
 end
 
 mod.on_enabled = function(initial_call)
 	mod.waypoints_ready = true
-	mod:echo('Waypoints initialized')
-	mod:enable_all_hooks()
 end
 
 --[[
 	Disable waypoints while in menus, renable when exiting menus
 --]]
 
-mod.mission_windows = {
-	"MatchmakingStateIngame",
-	"StartGameView", --Select Mission screens
-	"VMFOptionsView", --VMF options
-	--[["StartGameWindowAdventure",
-	"StartGameWindowAdventureSettings",
-	"StartGameWindowDifficulty",
-	"StartGameWindowGameMode",
-	"StartGameWindowLobbyBrowser",
-	"StartGameWindowMission",
-	"StartGameWindowMissionSelection",
-	"StartGameWindowMutator",
-	"StartGameWindowMutatorGrid",
-	"StartGameWindowMutatorList",
-	"StartGameWindowMutatorSummary",
-	"StartGameWindowSettings",
-	"StartGameWindowTwitchGameSettings",
-	"StartGameWindowTwitchLogin",--]]
+-- mod.mission_windows = {
+-- 	"MatchmakingStateIngame",
+-- 	"StartGameView", --Select Mission screens
+-- 	"VMFOptionsView", --VMF options
+-- 	"StartGameWindowAdventure",
+-- 	"StartGameWindowAdventureSettings",
+-- 	"StartGameWindowDifficulty",
+-- 	"StartGameWindowGameMode",
+-- 	"StartGameWindowLobbyBrowser",
+-- 	"StartGameWindowMission",
+-- 	"StartGameWindowMissionSelection",
+-- 	"StartGameWindowMutator",
+-- 	"StartGameWindowMutatorGrid",
+-- 	"StartGameWindowMutatorList",
+-- 	"StartGameWindowMutatorSummary",
+-- 	"StartGameWindowSettings",
+-- 	"StartGameWindowTwitchGameSettings",
+-- 	"StartGameWindowTwitchLogin",
 
-	"StateTitleScreenMainMenu",
-	"CharacterSelectionView",
-	"StartMenuView",
-	"OptionsView",
-	"HeroView"
-}
+-- 	"StateTitleScreenMainMenu",
+-- 	"CharacterSelectionView",
+-- 	"StartMenuView",
+-- 	"OptionsView",
+-- 	"HeroView"
+-- }
 
-for _, i in pairs(mod.mission_windows) do
-	mod:hook(i ..".on_enter", function(func, ...)
-		func(...)
+-- for _, i in pairs(mod.mission_windows) do
+-- 	mod:hook(i ..".on_enter", function(func, ...)
+-- 		func(...)
 
-		mod.waypoints_ready = false
-	end)
+-- 		mod.waypoints_ready = false
+-- 	end)
 
-	mod:hook(i ..".on_exit", function(func, ...)
-		func(...)
-		mod.waypoints_ready = true
-	end)
+-- 	mod:hook(i ..".on_exit", function(func, ...)
+-- 		func(...)
+-- 		mod.waypoints_ready = true
+-- 	end)
+-- end
+
+-- Enable waypoints when in level, disable and clear when exiting a level
+mod.on_game_state_changed = function(status, state_name)
+  if state_name == "StateInGame" then
+    if status == "enter" then
+      mod.waypoints_ready = true
+    else
+      mod.clear_all_waypoints()
+      mod.waypoints_ready = false
+    end
+  end
 end
-
--- Disable waypoints when exiting a level and clear them all
-mod:hook("StateInGameRunning.on_exit", function(func, ...)
-	func(...)
-
-	mod.clear_all_waypoints()
-
-	mod.waypoints_ready = false
-end)
-
-mod:hook("StateInGameRunning.event_game_started", function(func, ...)
-	func(...)
-
-	mod.waypoints_ready = true
-end)

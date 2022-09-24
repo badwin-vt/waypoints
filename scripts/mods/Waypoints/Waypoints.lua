@@ -165,7 +165,7 @@ end)
 mod.waypoint_render = function(self, dt)
 	mod:pcall(function()
 		-- if mod.waypoints_ready and Managers.world:world("level_world") then
-		if mod.waypoints_ready and Managers.world:world("level_world") then
+		if mod.waypoints_ready and not Managers.ui._ingame_ui.current_view and Managers.world:world("level_world") then
 
 			local num_waypoints_active = 0
 
